@@ -12,14 +12,14 @@ import hr.msimunovic.moneyheist.heist.Heist;
 import hr.msimunovic.moneyheist.heist.dto.*;
 import hr.msimunovic.moneyheist.heist.mapper.HeistMapper;
 import hr.msimunovic.moneyheist.heist.repository.HeistRepository;
-import hr.msimunovic.moneyheist.heistMember.HeistMember;
-import hr.msimunovic.moneyheist.heistMember.dto.MembersEligibleForHeistDTO;
-import hr.msimunovic.moneyheist.heistSkill.HeistSkill;
+import hr.msimunovic.moneyheist.heist_member.HeistMember;
+import hr.msimunovic.moneyheist.heist_member.dto.MembersEligibleForHeistDTO;
+import hr.msimunovic.moneyheist.heist_skill.HeistSkill;
 import hr.msimunovic.moneyheist.member.Member;
 import hr.msimunovic.moneyheist.member.mapper.MemberMapper;
 import hr.msimunovic.moneyheist.member.repository.MemberRepository;
-import hr.msimunovic.moneyheist.memberSkill.MemberSkill;
-import hr.msimunovic.moneyheist.memberSkill.MemberSkillImprovement.MemberSkillImprovement;
+import hr.msimunovic.moneyheist.member_skill.MemberSkill;
+import hr.msimunovic.moneyheist.member_skill.member_skill_improvement.MemberSkillImprovement;
 import hr.msimunovic.moneyheist.skill.Skill;
 import hr.msimunovic.moneyheist.skill.dto.SkillDTO;
 import hr.msimunovic.moneyheist.skill.mapper.SkillMapper;
@@ -117,7 +117,6 @@ public class HeistServiceImpl implements HeistService {
 
         Heist heist = findHeistById(heistId);
 
-        MembersEligibleForHeistDTO membersEligibleForHeistDTO = new MembersEligibleForHeistDTO();
         Set<HeistMemberDTO> heistMemberDTOList = new HashSet<>();
 
         // iterate on heist skills
@@ -125,7 +124,7 @@ public class HeistServiceImpl implements HeistService {
 
             // find skills which level is equal or greater than heist required skill
             List<Skill> skillsLevelEqualsOrGreater =
-                    skillRepository.findByNameAndLevelIsGreaterThanEqual(heistSkill.getSkill().getName(), heistSkill.getSkill().getLevel().length());
+                    skillRepository.findByNameAndLevelIsGreaterOrEqual(heistSkill.getSkill().getName(), heistSkill.getSkill().getLevel().length());
 
             for(Skill skill : skillsLevelEqualsOrGreater) {
 
@@ -153,12 +152,10 @@ public class HeistServiceImpl implements HeistService {
                 .map(skillMapper::mapHeistSkillToDTO)
                 .collect(Collectors.toList());
 
-        // set heist skills
-        membersEligibleForHeistDTO.setSkills(heistSkillDTOList);
-        // set eligible members for heist and their skill
-        membersEligibleForHeistDTO.setMembers(heistMemberDTOList);
-
-        return membersEligibleForHeistDTO;
+        return MembersEligibleForHeistDTO.builder()
+                .skills(heistSkillDTOList)
+                .members(heistMemberDTOList)
+                .build();
     }
 
     @Override
@@ -234,7 +231,6 @@ public class HeistServiceImpl implements HeistService {
     }
 
     @Override
-    @Transactional
     public void startHeist(Long heistId) {
 
         log.info("Heist with id {} started.", heistId);
@@ -263,7 +259,6 @@ public class HeistServiceImpl implements HeistService {
     }
 
     @Override
-    @Transactional
     public void endHeist(Long heistId) {
 
         scheduledTasks.forEach((k, v) -> {
@@ -374,11 +369,9 @@ public class HeistServiceImpl implements HeistService {
     private boolean validateMemberHeists(Set<HeistMember> heistMembers) {
 
         for (HeistMember heistMember : heistMembers) {
-            if(heistMember.getHeist().getStatus().equals(HeistStatusEnum.READY)) {
+            if(heistMember.getHeist().getStatus().equals(HeistStatusEnum.READY) || heistMember.getHeist().getStatus().equals(HeistStatusEnum.IN_PROGRESS)) {
                 return false;
                 /*throw new MethodNotAllowedException(Constants.MSG_MEMBERS_CONFIRMED);*/
-            } else if(heistMember.getHeist().getStatus().equals(HeistStatusEnum.IN_PROGRESS)) {
-                return false;
             }
         }
 
@@ -421,7 +414,7 @@ public class HeistServiceImpl implements HeistService {
         }
 
         // check is the startTime after the endTime or is the endTime in the past
-        if (startDate.isAfter(endDate) || endDate.isBefore(currentTime)) {
+        if (startDate!=null && endDate!=null && (startDate.isAfter(endDate) || endDate.isBefore(currentTime))) {
             throw new BadRequestException(Constants.MSG_INCORRECT_DATE_TIME);
         }
 
@@ -437,7 +430,7 @@ public class HeistServiceImpl implements HeistService {
         for (Heist heist : readyHeists) {
 
             Member memberConfirmed = heist.getMembers().stream()
-                    .map(heistMember -> heistMember.getMember())
+                    .map(HeistMember::getMember)
                     .filter(heistMember -> heistMember.getId().equals(member.getId()))
                     .findAny()
                     .orElse(null);
@@ -453,9 +446,10 @@ public class HeistServiceImpl implements HeistService {
         Set<SkillDTO> skillDuplicates = new HashSet<>();
         for(HeistSkillDTO heistSkillDTO : skills) {
 
-            SkillDTO skillDTO = new SkillDTO();
-            skillDTO.setName(heistSkillDTO.getName());
-            skillDTO.setLevel(heistSkillDTO.getLevel());
+            SkillDTO skillDTO = SkillDTO.builder()
+                    .name(heistSkillDTO.getName())
+                    .level(heistSkillDTO.getLevel())
+                    .build();
 
             // check is provided multiple skills with same name and level
             if (!skillDuplicates.add(skillDTO)) {

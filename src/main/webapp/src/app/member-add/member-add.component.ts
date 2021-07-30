@@ -1,31 +1,24 @@
 import {Component, OnInit} from '@angular/core';
-import {MemberService} from "../services/member.service";
-import {FormArray, FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
-import {Member} from "../models/member";
-import {Skill} from "../models/skill";
-import {NbToastrService} from "@nebular/theme";
-import {PRIMARY_OUTLET, Router, UrlSegment} from "@angular/router";
+import {MemberService} from '../services/member.service';
+import {FormArray, FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {Member} from '../models/member';
+import {Skill} from '../models/skill';
+import {NbToastrService} from '@nebular/theme';
+import {PRIMARY_OUTLET, Router, UrlSegment} from '@angular/router';
 
 @Component({
   selector: 'app-member-add',
   templateUrl: './member-add.component.html',
-  styleUrls: ['./member-add.component.css']
+  styleUrls: ['./member-add.component.css'],
 })
 export class MemberAddComponent implements OnInit {
 
-  mainSkill: string = '';
+  mainSkill = '';
 
-  genders: Array<{value:string, label:string}> = [];
+  genders: Array<{value: string, label: string}> = [];
   statuses: Array<{value: string}> = [];
 
-
-  memberFormGroup: FormGroup = this.formBuilder.group({
-    name: new FormControl('', [Validators.required]),
-    sex: new FormControl('M', [Validators.required]),
-    email: new FormControl('', [Validators.required, Validators.pattern("^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$")]),
-    status: new FormControl('', [Validators.required]),
-    skills: this.formBuilder.array([])
-  });
+  memberFormGroup!: FormGroup;
 
   constructor(private formBuilder: FormBuilder,
               private memberService: MemberService,
@@ -46,10 +39,17 @@ export class MemberAddComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.memberFormGroup = this.formBuilder.group({
+      name: new FormControl('', [Validators.required]),
+      sex: new FormControl('M', [Validators.required]),
+      email: new FormControl('', [Validators.required, Validators.pattern('^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$')]),
+      status: new FormControl('', [Validators.required]),
+      skills: this.formBuilder.array([])
+    });
   }
 
   get skills() {
-    return this.memberFormGroup.controls['skills'] as FormArray;
+    return this.memberFormGroup.controls.skills as FormArray;
   }
 
   addSkill() {
@@ -57,7 +57,7 @@ export class MemberAddComponent implements OnInit {
       name: new FormControl('', [Validators.required]),
       level: new FormControl('', [Validators.maxLength(10)]),
       checked: new FormControl(false)
-    })
+    });
     this.skills.push(skillForm);
   }
 
@@ -68,37 +68,37 @@ export class MemberAddComponent implements OnInit {
   checkMainSkill(checked: boolean, index: number) {
     this.skills.controls.forEach((skill, i) => {
       // set checked only one checkbox
-      if(i === index) {
+      if (i === index) {
         skill.patchValue({
-          checked: checked
-        })
+          checked
+        });
       } else {
         skill.patchValue({
           checked: false
-        })
+        });
       }
-    })
+    });
     // set main skill from checkbox
     this.mainSkill = this.skills.at(index).value.name;
   }
 
   onSubmit() {
 
-    if(this.memberFormGroup.invalid) {
-      this.toastrService.warning("Please fill in all required fields.", "Required fields")
+    if (this.memberFormGroup.invalid) {
+      this.toastrService.warning('Please fill in all required fields.', 'Required fields');
       this.memberFormGroup.markAllAsTouched();
       return;
     }
 
-    let member = new Member();
+    const member = new Member();
     member.name = this.memberFormGroup.value.name;
     member.sex = this.memberFormGroup.value.sex;
     member.email = this.memberFormGroup.value.email;
     member.status = this.memberFormGroup.value.status;
     member.mainSkill = this.mainSkill;
 
-    let skills: Skill[] = [];
-    let memberSkills = this.memberFormGroup.value.skills;
+    const skills: Skill[] = [];
+    const memberSkills = this.memberFormGroup.value.skills;
     // mapping member skills
     memberSkills.map((skill: Skill) => skills.push(skill));
 
@@ -106,22 +106,24 @@ export class MemberAddComponent implements OnInit {
 
     this.memberService.saveMember(member).subscribe(
       res => {
+        console.log(res);
         // reset form inputs
         this.resetForm();
 
         // get url segments from location response header
-        const urlSegments: UrlSegment[]  = this.router.parseUrl(<string>res.headers.get('location')).root.children[PRIMARY_OUTLET].segments;
+        const urlSegments: UrlSegment[]  = this.router
+          .parseUrl(res.headers.get('location') as string).root.children[PRIMARY_OUTLET].segments;
         // get user id from location response header segment
         const id = urlSegments[1].path;
 
         this.router.navigate(['/member/', id]);
       }
-    )
+    );
 
   }
 
   resetForm() {
-    //reset the form
+    // reset the form
     this.memberFormGroup.reset();
   }
 

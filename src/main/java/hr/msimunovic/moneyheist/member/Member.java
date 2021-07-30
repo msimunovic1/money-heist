@@ -2,12 +2,10 @@ package hr.msimunovic.moneyheist.member;
 
 import hr.msimunovic.moneyheist.common.enums.MemberSexEnum;
 import hr.msimunovic.moneyheist.common.enums.MemberStatusEnum;
-import hr.msimunovic.moneyheist.heistMember.HeistMember;
-import hr.msimunovic.moneyheist.memberSkill.MemberSkill;
+import hr.msimunovic.moneyheist.heist_member.HeistMember;
+import hr.msimunovic.moneyheist.member_skill.MemberSkill;
 import hr.msimunovic.moneyheist.skill.Skill;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.HashSet;
@@ -17,6 +15,7 @@ import java.util.Set;
 @Getter
 @Setter
 @RequiredArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Member {
 
@@ -38,6 +37,7 @@ public class Member {
     @OneToMany(mappedBy = "member",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @OrderBy("skill desc")
     private Set<MemberSkill> skills = new HashSet<>();
 
     @OneToMany(mappedBy = "member")
@@ -48,33 +48,36 @@ public class Member {
      */
     public void addSkill(Skill skill, String mainSkill) {
 
-        // check does skill with same name exists
-        // if Member Skill with same name and different level exits remove it from relationship
-        skills.removeIf(memberSkill -> memberSkill.getSkill().getName().equals(skill.getName()) &&
-                !memberSkill.getSkill().getLevel().equals(skill.getLevel()));
+        if (skill!=null) {
 
-        MemberSkill existedMemberSkill = findExistedMemberSkill(skill.getMembers());
+            // check does skill with same name exists
+            // if Member Skill with same name and different level exits remove it from relationship
+            skills.removeIf(memberSkill -> memberSkill.getSkill().getName().equals(skill.getName()) &&
+                    !memberSkill.getSkill().getLevel().equals(skill.getLevel()));
 
-        MemberSkill memberSkill = new MemberSkill();
+            var existedMemberSkill = findExistedMemberSkill(skill.getMembers());
 
-        if(existedMemberSkill==null) {
-            memberSkill.setMember(this);
-            memberSkill.setSkill(skill);
-        } else {
-            memberSkill = existedMemberSkill;
+            var memberSkill = new MemberSkill();
+
+            if (existedMemberSkill == null) {
+                memberSkill.setMember(this);
+                memberSkill.setSkill(skill);
+            } else {
+                memberSkill = existedMemberSkill;
+            }
+
+            if (mainSkill == null || mainSkill.isEmpty()) {
+                memberSkill.setMainSkill("N");
+            }
+
+            skills.add(memberSkill);
+            skill.getMembers().add(memberSkill);
+
+            if (mainSkill != null && !mainSkill.isEmpty()) {
+                updateMainSkill(mainSkill);
+            }
+
         }
-
-        if(mainSkill==null || mainSkill.isEmpty()) {
-            memberSkill.setMainSkill("N");
-        }
-
-        skills.add(memberSkill);
-        skill.getMembers().add(memberSkill);
-
-        if(mainSkill!=null && !mainSkill.isEmpty()) {
-            updateMainSkill(mainSkill);
-        }
-
     }
 
     public MemberSkill findExistedMemberSkill(Set<MemberSkill> memberSkills) {
@@ -88,7 +91,7 @@ public class Member {
 
         for (Iterator<MemberSkill> iterator = skills.iterator(); iterator.hasNext(); ) {
 
-            MemberSkill memberSkill = iterator.next();
+            var memberSkill = iterator.next();
 
             if(memberSkill.getMember().equals(this) && memberSkill.getSkill().equals(skill)) {
                 iterator.remove();

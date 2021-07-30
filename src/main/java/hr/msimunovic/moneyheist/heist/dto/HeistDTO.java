@@ -1,7 +1,12 @@
 package hr.msimunovic.moneyheist.heist.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import hr.msimunovic.moneyheist.common.enums.HeistStatusEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
@@ -12,6 +17,9 @@ import java.util.List;
  * Data Transformation Object for work with API-s that request or response general Heist data.
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class HeistDTO {
 
     @NotEmpty(message = "Heist name is required")

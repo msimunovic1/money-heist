@@ -2,10 +2,11 @@ package hr.msimunovic.moneyheist.heist;
 
 import hr.msimunovic.moneyheist.common.enums.HeistOutcomeEnum;
 import hr.msimunovic.moneyheist.common.enums.HeistStatusEnum;
-import hr.msimunovic.moneyheist.heistMember.HeistMember;
-import hr.msimunovic.moneyheist.heistSkill.HeistSkill;
+import hr.msimunovic.moneyheist.heist_member.HeistMember;
+import hr.msimunovic.moneyheist.heist_skill.HeistSkill;
 import hr.msimunovic.moneyheist.member.Member;
 import hr.msimunovic.moneyheist.skill.Skill;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -18,6 +19,7 @@ import java.util.Set;
 @Getter
 @Setter
 @RequiredArgsConstructor
+@AllArgsConstructor
 @Entity
 public class Heist {
 
@@ -43,6 +45,7 @@ public class Heist {
     @OneToMany(mappedBy = "heist",
             cascade = CascadeType.ALL,
             orphanRemoval = true)
+    @OrderBy("skill desc")
     private Set<HeistSkill> skills = new HashSet<>();
 
     @OneToMany(mappedBy = "heist",
@@ -55,20 +58,22 @@ public class Heist {
      */
     public void addSkill(Skill skill, Integer members) {
 
-        HeistSkill existedHeistSkill = findExistedHeistSkill(skill.getHeists());
+        if (skill.getHeists()!=null) {
+            var existedHeistSkill = findExistedHeistSkill(skill.getHeists());
 
-        HeistSkill heistSkill = new HeistSkill();
+            var heistSkill = new HeistSkill();
 
-        if(existedHeistSkill==null) {
-            heistSkill.setHeist(this);
-            heistSkill.setSkill(skill);
-        } else {
-            heistSkill = existedHeistSkill;
+            if (existedHeistSkill == null) {
+                heistSkill.setHeist(this);
+                heistSkill.setSkill(skill);
+            } else {
+                heistSkill = existedHeistSkill;
+            }
+
+            heistSkill.setMembers(members);
+            skills.add(heistSkill);
+            skill.getHeists().add(heistSkill);
         }
-
-        heistSkill.setMembers(members);
-        skills.add(heistSkill);
-        skill.getHeists().add(heistSkill);
     }
 
     public HeistSkill findExistedHeistSkill(Set<HeistSkill> heistSkills) {
@@ -80,7 +85,7 @@ public class Heist {
 
     public void addMember(Member member) {
 
-        HeistMember heistMember = new HeistMember();
+        var heistMember = new HeistMember();
         heistMember.setHeist(this);
         heistMember.setMember(member);
 

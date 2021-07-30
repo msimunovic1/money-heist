@@ -1,9 +1,9 @@
 package hr.msimunovic.moneyheist.skill.mapper;
 
 import hr.msimunovic.moneyheist.heist.dto.HeistSkillDTO;
-import hr.msimunovic.moneyheist.heistSkill.HeistSkill;
+import hr.msimunovic.moneyheist.heist_skill.HeistSkill;
 import hr.msimunovic.moneyheist.member.dto.MemberSkillDTO;
-import hr.msimunovic.moneyheist.memberSkill.MemberSkill;
+import hr.msimunovic.moneyheist.member_skill.MemberSkill;
 import hr.msimunovic.moneyheist.skill.Skill;
 import hr.msimunovic.moneyheist.skill.dto.SkillDTO;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +20,10 @@ public class SkillMapper {
 
     public SkillDTO mapMemberSkillToDTO(MemberSkill memberSkill) {
 
-        SkillDTO skillDTO = new SkillDTO();
-        skillDTO.setName(memberSkill.getSkill().getName());
-        skillDTO.setLevel(memberSkill.getSkill().getLevel());
-
-        return skillDTO;
+        return SkillDTO.builder()
+                .name(memberSkill.getSkill().getName())
+                .level(memberSkill.getSkill().getLevel())
+                .build();
     }
 
     public Skill mapMemberSkillToSkill(MemberSkill memberSkill) {
@@ -40,7 +39,6 @@ public class SkillMapper {
 
         MemberSkillDTO memberSkillDTO = new MemberSkillDTO();
 
-        // TODO: ovo izdvojiti u metodu
         List<SkillDTO> skillDTOList = new ArrayList<>();
 
         memberSkills
@@ -58,17 +56,15 @@ public class SkillMapper {
 
     public List<HeistSkillDTO> mapHeistSkillsToDTO(Set<HeistSkill> heistSkills) {
         return heistSkills.stream()
-                .map(heistSkill -> mapHeistSkillToDTO(heistSkill))
+                .map(this::mapHeistSkillToDTO)
                 .collect(Collectors.toList());
     }
 
     public HeistSkillDTO mapHeistSkillToDTO(HeistSkill heistSkill) {
-
-        HeistSkillDTO heistSkillDTO = new HeistSkillDTO();
-        heistSkillDTO.setName(heistSkill.getSkill().getName());
-        heistSkillDTO.setLevel(heistSkill.getSkill().getLevel());
-        heistSkillDTO.setMembers(heistSkill.getMembers());
-
-        return heistSkillDTO;
+        return HeistSkillDTO.builder()
+                .name(heistSkill.getSkill().getName())
+                .level(heistSkill.getSkill().getLevel())
+                .members(heistSkill.getMembers())
+                .build();
     }
 }

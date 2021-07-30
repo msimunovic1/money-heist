@@ -5,7 +5,7 @@ import hr.msimunovic.moneyheist.heist.Heist;
 import hr.msimunovic.moneyheist.heist.dto.HeistDTO;
 import hr.msimunovic.moneyheist.heist.dto.HeistMemberDTO;
 import hr.msimunovic.moneyheist.heist.dto.HeistSkillDTO;
-import hr.msimunovic.moneyheist.heistMember.HeistMember;
+import hr.msimunovic.moneyheist.heist_member.HeistMember;
 import hr.msimunovic.moneyheist.skill.Skill;
 import hr.msimunovic.moneyheist.skill.dto.SkillDTO;
 import hr.msimunovic.moneyheist.skill.mapper.SkillMapper;
@@ -28,20 +28,18 @@ public class HeistMapper {
 
     public HeistDTO mapHeistToDTO(Heist heist) {
 
-        HeistDTO heistDTO = new HeistDTO();
-        heistDTO.setName(heist.getName());
-        heistDTO.setLocation(heist.getLocation());
-        heistDTO.setStartTime(heist.getStartTime());
-        heistDTO.setEndTime(heist.getEndTime());
-
         List<HeistSkillDTO> heistSkillDTOList = heist.getSkills().stream()
-                .map(heistSkill -> skillMapper.mapHeistSkillToDTO(heistSkill))
+                .map(skillMapper::mapHeistSkillToDTO)
                 .collect(Collectors.toList());
 
-        heistDTO.setSkills(heistSkillDTOList);
-        heistDTO.setStatus(heist.getStatus());
-
-        return heistDTO;
+        return HeistDTO.builder()
+                .name(heist.getName())
+                .location(heist.getLocation())
+                .startTime(heist.getStartTime())
+                .endTime(heist.getEndTime())
+                .skills(heistSkillDTOList)
+                .status(heist.getStatus())
+                .build();
 
     }
 
@@ -79,17 +77,15 @@ public class HeistMapper {
 
     public HeistMemberDTO mapHeistMemberToDTO(HeistMember heistMember) {
 
-        HeistMemberDTO heistMemberDTO = new HeistMemberDTO();
-        heistMemberDTO.setId(heistMember.getMember().getId());
-        heistMemberDTO.setName(heistMember.getMember().getName());
-
         List<SkillDTO> skillDTOList = heistMember.getMember().getSkills().stream()
-                .map(memberSkill -> skillMapper.mapMemberSkillToDTO(memberSkill))
+                .map(skillMapper::mapMemberSkillToDTO)
                 .collect(Collectors.toList());
 
-        heistMemberDTO.setSkills(skillDTOList);
-
-        return heistMemberDTO;
+        return HeistMemberDTO.builder()
+                .id(heistMember.getMember().getId())
+                .name(heistMember.getMember().getName())
+                .skills(skillDTOList)
+                .build();
     }
 
 
